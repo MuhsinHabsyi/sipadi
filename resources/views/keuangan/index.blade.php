@@ -35,9 +35,6 @@
 <div class="card">
     <div class="card-header">
         <h2 class="card-title">Riwayat Arus Kas</h2>
-        <a href="{{ route('keuangan.create') }}" style="background: var(--color-primary); color: black; padding: 8px 16px; border-radius: var(--radius-md); text-decoration: none; font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
-            <i class="ph-bold ph-plus"></i> Catat Transaksi
-        </a>
     </div>
 
     <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">

@@ -144,6 +144,10 @@
            class="nav-item {{ request()->routeIs('pertanian.*') ? 'active' : '' }}">
             <i class="ph-bold ph-field"></i> Lahan &amp; Bibit
         </a>
+        <a href="{{ route('pengadaan.index') }}" id="nav-pengadaan"
+           class="nav-item {{ request()->routeIs('pengadaan.*') ? 'active' : '' }}">
+            <i class="ph-bold ph-package"></i> Pengadaan
+        </a>
         <a href="{{ route('panen.index') }}" id="nav-panen"
            class="nav-item {{ request()->routeIs('panen.*') ? 'active' : '' }}">
             <i class="ph-bold ph-basket"></i> Data Panen
@@ -157,8 +161,12 @@
         @if(in_array($role, ['ketua','staf_penjualan']))
         <div class="nav-sec">Penjualan</div>
         <a href="{{ route('transaksi.index') }}" id="nav-transaksi"
-           class="nav-item {{ request()->routeIs('transaksi.*') ? 'active' : '' }}">
+           class="nav-item {{ request()->routeIs('transaksi.*') && !request()->routeIs('transaksi.konten.edit') ? 'active' : '' }}">
             <i class="ph-bold ph-shopping-cart"></i> Transaksi
+        </a>
+        <a href="{{ route('transaksi.konten.edit') }}" id="nav-konten-landing"
+           class="nav-item {{ request()->routeIs('transaksi.konten.edit') ? 'active' : '' }}">
+            <i class="ph-bold ph-gear"></i> Katalog & Landing
         </a>
         @endif
 
@@ -180,6 +188,10 @@
 
         @if($role === 'ketua')
         <div class="nav-sec">Administrasi</div>
+        <a href="{{ route('anggota.index') }}" id="nav-anggota"
+           class="nav-item {{ request()->routeIs('anggota.*') ? 'active' : '' }}">
+            <i class="ph-bold ph-user-list"></i> Anggota Tani
+        </a>
         <a href="{{ route('pengguna.index') }}" id="nav-pengguna"
            class="nav-item {{ request()->routeIs('pengguna.*') ? 'active' : '' }}">
             <i class="ph-bold ph-users"></i> Hak Akses

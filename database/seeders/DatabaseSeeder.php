@@ -38,5 +38,15 @@ class DatabaseSeeder extends Seeder
         if (StokBeras::count() === 0) {
             StokBeras::create(['ketersediaan_stok' => 0]);
         }
+
+        // Inisialisasi konten landing page
+        if (\App\Models\KontenLanding::count() === 0) {
+            \App\Models\KontenLanding::create([
+                'judul_hero' => 'Kualitas Beras Terbaik dari Petani Lokal',
+                'deskripsi_hero' => 'SIPADI menghadirkan beras premium hasil jerih payah kelompok tani lokal dengan kualitas terjaga dan harga yang bersahabat.',
+                'judul_toko' => 'Katalog Beras Kami',
+                'deskripsi_toko' => 'Pilih berbagai jenis beras kualitas unggul untuk kebutuhan konsumsi harian keluarga Anda.',
+            ]);
+        }
     }
 }

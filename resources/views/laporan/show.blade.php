@@ -95,11 +95,27 @@
 <style>
     @media print {
         @page { margin: 20mm; }
-        .sidebar, .topbar, .card-header button, .card-header form, .card-header span { display: none !important; }
-        .main { margin: 0 !important; padding: 0 !important; }
-        .card { box-shadow: none !important; border: none !important; background: transparent !important; }
-        body { background: black !important; }
-        #print-area { display: block !important; width: 100% !important; }
+        nav, header, aside, .sidebar, .topbar, .card-header button, .card-header form, .card-header span, a[href="{{ route('laporan.index') }}"] { 
+            display: none !important; 
+        }
+        main, .main-content, .card { 
+            margin: 0 !important; 
+            padding: 0 !important; 
+            box-shadow: none !important; 
+            border: none !important; 
+            background: #fff !important;
+        }
+        body { 
+            background: #fff !important; 
+            color: #000 !important;
+        }
+        #print-area { 
+            display: block !important; 
+            width: 100% !important; 
+        }
+        .card-header {
+            display: none !important;
+        }
     }
 </style>
 

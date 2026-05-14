@@ -27,17 +27,57 @@
         @csrf
         <input type="hidden" name="id_petani" value="{{ $selectedPetani->id }}">
 
+        {{-- Detail Lahan Garapan & Estimasi Panen --}}
+        <div style="margin-bottom: 24px; padding: 20px; background: linear-gradient(135deg, #F0F7F4, #E2EFEA); border-radius: var(--radius-md); border: 1px solid #B7E4C7;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                <div style="width: 24px; height: 24px; background: var(--color-primary); color: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">
+                    <i class="ph-bold ph-map-pin"></i>
+                </div>
+                <h3 style="font-size: 14px; font-weight: 700; color: var(--color-accent); margin: 0;">Detail Lahan Garapan</h3>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <div style="font-size: 11px; font-weight: 700; color: var(--color-primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Nama Lahan</div>
+                    <div style="font-size: 14px; font-weight: 600; color: var(--color-text);">{{ $selectedPetani->nama_lahan ?? '—' }}</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; font-weight: 700; color: var(--color-primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Status Lahan</div>
+                    <div style="font-size: 14px; font-weight: 600; color: var(--color-text);">{{ $selectedPetani->status_lahan ?? '—' }}</div>
+                </div>
+                <div style="grid-column: span 2;">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--color-primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Alamat Lahan</div>
+                    <div style="font-size: 13px; color: var(--color-text);">{{ $selectedPetani->alamat_lahan ?? '—' }}</div>
+                </div>
+                <div style="grid-column: span 2; background: white; padding: 12px; border-radius: 8px; border: 1px solid #B7E4C7; display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <div style="font-size: 11px; font-weight: 700; color: var(--color-muted); text-transform: uppercase;">Luas Lahan</div>
+                        <div style="font-size: 15px; font-weight: 700; color: var(--color-text);">{{ $selectedPetani->luas_lahan }} <span style="font-weight: normal; font-size: 12px;">tumbak</span></div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 11px; font-weight: 700; color: var(--color-primary); text-transform: uppercase;">Estimasi Panen</div>
+                        <div style="font-size: 18px; font-weight: 800; color: var(--color-accent);">{{ number_format($selectedPetani->luas_lahan * 10, 0, ',', '.') }} <span style="font-weight: normal; font-size: 12px;">KG</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         @if($bibitRef)
-        <div style="background: #F0F7F4; border: 1px dashed var(--color-primary-lt); padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px;">
-            <div style="font-size: 12px; font-weight: 700; color: var(--color-primary); text-transform: uppercase; margin-bottom: 8px;">Referensi Alokasi Bibit Terakhir</div>
-            <div style="font-size: 14px; color: var(--color-text);">
-                <strong>Musim:</strong> {{ $bibitRef->musim_tanam }} <br>
-                <strong>Jumlah Bibit:</strong> {{ $bibitRef->jumlah_bibit }} pack
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; padding: 16px; border-radius: var(--radius-md); margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; background: #EBF5FB; color: var(--color-info); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                <i class="ph-bold ph-info"></i>
+            </div>
+            <div style="flex: 1;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--color-info); text-transform: uppercase;">Referensi Bibit Terakhir</div>
+                <div style="font-size: 14px; color: var(--color-text);">
+                    Musim <strong>{{ $bibitRef->musim_tanam }}</strong> — Alokasi <strong>{{ $bibitRef->jumlah_bibit }} kg</strong>
+                </div>
             </div>
         </div>
         @else
-        <div style="background: #FEF0EF; border: 1px dashed #F5B7B1; padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px;">
-            <div style="font-size: 14px; color: var(--color-danger);">
+        <div style="background: #FEF0EF; border: 1px dashed #F5B7B1; padding: 16px; border-radius: var(--radius-md); margin-bottom: 24px;">
+            <div style="font-size: 14px; color: var(--color-danger); display: flex; align-items: center; gap: 8px;">
+                <i class="ph-bold ph-warning-circle"></i>
                 Petani ini belum memiliki data referensi alokasi bibit.
             </div>
         </div>
@@ -45,7 +85,7 @@
 
         <div style="margin-bottom: 20px;">
             <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px;">Musim Tanam</label>
-            <input type="text" name="musim_tanam" value="{{ old('musim_tanam', $bibitRef ? $bibitRef->musim_tanam : '') }}" required placeholder="Contoh: 2024-Ganjil"
+            <input type="text" name="musim_tanam" value="{{ old('musim_tanam', $bibitRef ? $bibitRef->musim_tanam : '') }}" readonly
                    style="width: 100%; padding: 10px 14px; border: 1.5px solid var(--color-border); border-radius: var(--radius-md); font-family: inherit; font-size: 14px;">
             @error('musim_tanam') <span style="color: var(--color-danger); font-size: 12px; margin-top: 4px; display: block;">{{ $message }}</span> @enderror
         </div>

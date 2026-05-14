@@ -104,6 +104,18 @@
             display: flex;
             flex-direction: column;
             gap: 2px;
+            scrollbar-width: thin;
+            scrollbar-color: #D4EDE0 transparent;
+        }
+        .sidebar-nav::-webkit-scrollbar {
+            width: 6px;
+        }
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background-color: #D4EDE0;
+            border-radius: 10px;
         }
 
         .nav-section-label {
@@ -364,6 +376,22 @@
 
             @php $role = session('pengguna_role'); @endphp
 
+            @if($role === 'ketua')
+            <div class="nav-section-label">Administrasi</div>
+            <a href="{{ route('anggota.index') }}"
+               class="nav-item {{ request()->routeIs('anggota.*') ? 'active' : '' }}"
+               id="nav-anggota">
+                <i class="ph-bold ph-user-list"></i>
+                Data Anggota Petani
+            </a>
+            <a href="{{ route('pengguna.index') }}"
+               class="nav-item {{ request()->routeIs('pengguna.*') ? 'active' : '' }}"
+               id="nav-pengguna">
+                <i class="ph-bold ph-users"></i>
+                Hak Akses
+            </a>
+            @endif
+
             @if(in_array($role, ['ketua', 'staf_produksi']))
             <div class="nav-section-label">Produksi</div>
             <a href="{{ route('pertanian.index') }}"
@@ -415,16 +443,6 @@
                id="nav-laporan">
                 <i class="ph-bold ph-file-text"></i>
                 Laporan
-            </a>
-            @endif
-
-            @if($role === 'ketua')
-            <div class="nav-section-label">Administrasi</div>
-            <a href="{{ route('pengguna.index') }}"
-               class="nav-item {{ request()->routeIs('pengguna.*') ? 'active' : '' }}"
-               id="nav-pengguna">
-                <i class="ph-bold ph-users"></i>
-                Hak Akses
             </a>
             @endif
         </nav>

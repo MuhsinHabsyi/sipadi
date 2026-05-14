@@ -3,7 +3,7 @@
 <div class="card">
     <div class="card-header">
         <h2 class="card-title">Daftar Laporan Operasional</h2>
-        @if(session('pengguna_role') === 'staf_keuangan')
+        @if(in_array(session('pengguna_role'), ['staf_keuangan', 'ketua']))
         <a href="{{ route('laporan.create') }}" style="background: var(--color-primary); color: black; padding: 8px 16px; border-radius: var(--radius-md); text-decoration: none; font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
             <i class="ph-bold ph-plus"></i> Buat Laporan Baru
         </a>
@@ -34,9 +34,17 @@
                     @endif
                 </td>
                 <td style="padding: 12px; text-align: right;">
-                    <a href="{{ route('laporan.show', $laporan) }}" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; background: #EBF5FB; color: var(--color-info); text-decoration: none; font-size: 13px; font-weight: 600;" title="Cetak Laporan">
-                        <i class="ph-bold ph-printer"></i> Cetak
-                    </a>
+                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                        <a href="{{ route('laporan.show', $laporan) }}" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; background: #EBF5FB; color: var(--color-info); text-decoration: none; font-size: 13px; font-weight: 600;" title="Cetak Laporan">
+                            <i class="ph-bold ph-printer"></i> Cetak
+                        </a>
+                        <form method="POST" action="{{ route('laporan.destroy', $laporan) }}" onsubmit="return confirm('Hapus laporan ini?');">
+                            @csrf @method('DELETE')
+                            <button type="submit" style="padding: 6px 12px; border-radius: 8px; background: #FEF0EF; color: #CB4335; border: none; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="ph-bold ph-trash"></i> Hapus
+                            </button>
+                        </form>
+                    </div>
                 </td>
             </tr>
             @empty

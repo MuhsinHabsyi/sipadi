@@ -4,35 +4,35 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaksi;
 use App\Models\StokBeras;
+use App\Models\KontenLanding;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class TokoController extends Controller
 {
-    /** Daftar produk beras yang tersedia */
+    /** Daftar produk beras dari katalog */
     private function getProducts()
     {
+        $konten = KontenLanding::first();
+        $stok = StokBeras::first();
+
+        // Jika data katalog kosong, return empty
+        if (!$konten || !$konten->produk_nama) {
+            return [];
+        }
+
+        $stokDijual = $konten->produk_stok_dijual ?? 0;
+        $stokEcommerce = $stok ? $stok->stok_ecommerce : 0;
+        $stokTersedia = min($stokDijual, $stokEcommerce);
+
         return [
             [
-                'slug' => 'pandan-wangi',
-                'nama' => 'Beras Pandan Wangi',
-                'deskripsi' => 'Beras premium dengan aroma pandan alami yang khas. Cocok untuk nasi putih sehari-hari.',
-                'harga' => 15000, // per kg
-                'emoji' => '🌾',
-            ],
-            [
-                'slug' => 'ketan',
-                'nama' => 'Beras Ketan',
-                'deskripsi' => 'Beras ketan berkualitas tinggi untuk kue tradisional dan olahan ketan lainnya.',
-                'harga' => 18000,
-                'emoji' => '🍚',
-            ],
-            [
-                'slug' => 'beras-coklat',
-                'nama' => 'Beras Coklat',
-                'deskripsi' => 'Beras coklat organik kaya serat dan nutrisi. Pilihan sehat untuk keluarga.',
-                'harga' => 22000,
-                'emoji' => '🌿',
+                'slug' => 'produk-utama',
+                'nama' => $konten->produk_nama,
+                'deskripsi' => $konten->produk_deskripsi ?? '',
+                'harga' => $konten->produk_harga ?? 0,
+                'gambar' => $konten->produk_gambar ? asset('storage/' . $konten->produk_gambar) : null,
+                'stok_tersedia' => max(0, $stokTersedia),
             ],
         ];
     }
@@ -42,8 +42,9 @@ class TokoController extends Controller
     {
         $products = $this->getProducts();
         $stok = StokBeras::first();
+        $konten = KontenLanding::first();
         $cart = session('cart', []);
-        return view('toko.index', compact('products', 'stok', 'cart'));
+        return view('toko.index', compact('products', 'stok', 'konten', 'cart'));
     }
 
     /** Tambah ke keranjang (session-based) */
@@ -119,13 +120,23 @@ class TokoController extends Controller
     /** Proses checkout → simpan transaksi */
     public function processCheckout(Request $request)
     {
-        $request->validate([
-            'bukti_transfer' => 'required|image|mimes:jpg,jpeg,png|max:2048',
-        ], [
-            'bukti_transfer.required' => 'Bukti transfer wajib diunggah.',
-            'bukti_transfer.image' => 'File harus berupa gambar.',
-            'bukti_transfer.max' => 'Ukuran file maksimal 2MB.',
-        ]);
+        $rules = [
+            'nama_pelanggan_manual' => 'required|string|max:255',
+            'alamat_pengantaran' => 'required|string',
+        ];
+        $messages = [
+            'nama_pelanggan_manual.required' => 'Nama penerima wajib diisi.',
+            'alamat_pengantaran.required' => 'Alamat pengantaran wajib diisi.',
+        ];
+
+        if (!$request->has('is_dummy')) {
+            $rules['bukti_transfer'] = 'required|image|mimes:jpg,jpeg,png|max:2048';
+            $messages['bukti_transfer.required'] = 'Bukti transfer wajib diunggah.';
+            $messages['bukti_transfer.image'] = 'File harus berupa gambar.';
+            $messages['bukti_transfer.max'] = 'Ukuran file maksimal 2MB.';
+        }
+
+        $request->validate($rules, $messages);
 
         $cart = session('cart', []);
         if (empty($cart)) {
@@ -144,24 +155,33 @@ class TokoController extends Controller
                 return back()->with('error', 'Maaf, stok beras tidak mencukupi untuk pesanan Anda.');
             }
 
-            // Upload bukti transfer
-            $buktiPath = $request->file('bukti_transfer')->store('bukti_transfer', 'public');
+            // Upload bukti transfer atau gunakan dummy
+            if ($request->has('is_dummy')) {
+                $buktiPath = 'bukti_transfer/dummy_receipt.png';
+            } else {
+                $buktiPath = $request->file('bukti_transfer')->store('bukti_transfer', 'public');
+            }
 
-            // Kurangi stok sementara
-            $stok->ketersediaan_stok -= $totalJumlahKg;
-            $stok->save();
+            // Stok tidak dikurangi di sini (sesuai permintaan: dikurangi saat pesanan diterima/dikonfirmasi)
+            
+            // Ambil musim tanam terbaru untuk transaksi ecommerce
+            $latestMusim = \App\Models\DataPanen::latest()->value('musim_tanam') ?? ('MT-' . date('Y'));
 
             // Buat transaksi untuk setiap item
             foreach ($cart as $item) {
                 Transaksi::create([
                     'id_pelanggan' => $pelangganId,
                     'jenis_beras' => $item['nama'],
+                    'musim_tanam' => $latestMusim,
                     'harga_satuan' => $item['harga'],
                     'tanggal_pesanan' => now()->toDateString(),
                     'jumlah_pesanan' => $item['jumlah'],
                     'total_harga' => $item['harga'] * $item['jumlah'],
                     'bukti_transfer' => $buktiPath,
                     'status_pesanan' => Transaksi::STATUS_MENUNGGU,
+                    'tipe_transaksi' => 'ecommerce',
+                    'nama_pelanggan_manual' => $request->nama_pelanggan_manual,
+                    'alamat_pengantaran' => $request->alamat_pengantaran,
                 ]);
             }
 

@@ -9,10 +9,30 @@ class KeuanganController extends Controller
 {
     public function index()
     {
-        $arusKas = ArusKas::latest()->get();
+        $transaksis = \App\Models\Transaksi::where('status_pesanan', \App\Models\Transaksi::STATUS_SELESAI)->get()->map(function($t) {
+            return (object)[
+                'tanggal' => $t->updated_at,
+                'musim_tanam' => $t->musim_tanam ?? '-',
+                'keterangan' => 'Pemasukan dari Transaksi #' . $t->id . ' (' . ucfirst($t->tipe_transaksi) . ')',
+                'jenis_transaksi' => 'pemasukan',
+                'nominal' => $t->total_harga,
+            ];
+        });
+
+        $pengadaans = \App\Models\Pengadaan::where('asal_barang', 'Beli')->get()->map(function($p) {
+            return (object)[
+                'tanggal' => $p->created_at,
+                'musim_tanam' => $p->musim_tanam ?? '-',
+                'keterangan' => 'Pengadaan ' . $p->jenis_barang . ' sejumlah ' . $p->jumlah,
+                'jenis_transaksi' => 'pengeluaran',
+                'nominal' => $p->total_biaya,
+            ];
+        });
+
+        $arusKas = $transaksis->concat($pengadaans)->sortByDesc('tanggal')->values();
         
-        $pemasukan = $arusKas->where('jenis_transaksi', ArusKas::JENIS_PEMASUKAN)->sum('nominal');
-        $pengeluaran = $arusKas->where('jenis_transaksi', ArusKas::JENIS_PENGELUARAN)->sum('nominal');
+        $pemasukan = $transaksis->sum('nominal');
+        $pengeluaran = $pengadaans->sum('nominal');
         $saldo = $pemasukan - $pengeluaran;
 
         return view('keuangan.index', compact('arusKas', 'pemasukan', 'pengeluaran', 'saldo'));
@@ -20,7 +40,9 @@ class KeuanganController extends Controller
 
     public function create()
     {
-        $listMusim = \App\Models\DataPanen::select('musim_tanam')->distinct()->pluck('musim_tanam');
+        $musimBibit = \App\Models\AlokasiBibit::select('musim_tanam')->distinct()->pluck('musim_tanam');
+        $musimPanen = \App\Models\DataPanen::select('musim_tanam')->distinct()->pluck('musim_tanam');
+        $listMusim = $musimBibit->concat($musimPanen)->unique()->sort()->values();
         return view('keuangan.create', compact('listMusim'));
     }
 

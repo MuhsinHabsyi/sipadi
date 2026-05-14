@@ -18,7 +18,10 @@ class LaporanController extends Controller
     public function create(Request $request)
     {
         $musim_tanam = $request->query('musim_tanam');
-        $listMusim = PembagianHasil::select('musim_tanam')->distinct()->pluck('musim_tanam');
+        // Ambil daftar musim tanam dari data bibit dan panen
+        $musimBibit = \App\Models\AlokasiBibit::select('musim_tanam')->distinct()->pluck('musim_tanam');
+        $musimPanen = DataPanen::select('musim_tanam')->distinct()->pluck('musim_tanam');
+        $listMusim = $musimBibit->concat($musimPanen)->unique()->sort()->values();
 
         $laporanDraft = null;
         if ($musim_tanam) {
@@ -89,5 +92,11 @@ class LaporanController extends Controller
         $laporan->save();
 
         return redirect()->route('laporan.show', $laporan)->with('success', 'Laporan berhasil difinalisasi oleh Ketua.');
+    }
+
+    public function destroy(LaporanOperasional $laporan)
+    {
+        $laporan->delete();
+        return redirect()->route('laporan.index')->with('success', 'Laporan berhasil dihapus.');
     }
 }

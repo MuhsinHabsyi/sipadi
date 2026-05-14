@@ -12,6 +12,8 @@ use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\PenggunaController;
 use App\Http\Controllers\TokoController;
 use App\Http\Controllers\PelangganAuthController;
+use App\Http\Controllers\AnggotaPetaniController;
+use App\Http\Controllers\PengadaanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -88,8 +90,11 @@ Route::middleware('pengguna.auth')->group(function () {
     */
     Route::middleware('pengguna.auth:ketua,staf_produksi')->group(function () {
         Route::resource('pertanian', PertanianController::class);
+        Route::get('pertanian/get-petani/{id}', [PertanianController::class, 'getDataPetani'])
+             ->name('pertanian.getPetani');
         Route::resource('panen', PanenController::class);
         Route::get('cuaca', [CuacaController::class, 'index'])->name('cuaca.index');
+        Route::resource('pengadaan', PengadaanController::class)->except(['show', 'edit', 'update']);
     });
 
     /*
@@ -99,10 +104,17 @@ Route::middleware('pengguna.auth')->group(function () {
     */
     Route::middleware('pengguna.auth:ketua,staf_penjualan')->group(function () {
         Route::resource('transaksi', TransaksiController::class);
-        Route::patch('transaksi/{transaksi}/konfirmasi', [TransaksiController::class, 'konfirmasi'])
-             ->name('transaksi.konfirmasi');
+        Route::post('/transaksi/alokasi', [TransaksiController::class, 'alokasiStok'])->name('transaksi.alokasi');
+        Route::post('/transaksi/update-harga', [TransaksiController::class, 'updateHarga'])->name('transaksi.harga.update');
+        Route::patch('/transaksi/{transaksi}/konfirmasi', [TransaksiController::class, 'konfirmasi'])->name('transaksi.konfirmasi');
         Route::patch('transaksi/{transaksi}/batalkan', [TransaksiController::class, 'batalkan'])
              ->name('transaksi.batalkan');
+        
+        // Edit Landing Page
+        Route::get('konten-landing', [TransaksiController::class, 'editKonten'])
+             ->name('transaksi.konten.edit');
+        Route::patch('konten-landing', [TransaksiController::class, 'updateKonten'])
+             ->name('transaksi.konten.update');
     });
 
     /*
@@ -113,6 +125,8 @@ Route::middleware('pengguna.auth')->group(function () {
     Route::middleware('pengguna.auth:ketua,staf_keuangan')->group(function () {
         Route::resource('keuangan', KeuanganController::class);
         Route::resource('bagi-hasil', BagiHasilController::class);
+        Route::delete('bagi-hasil-musim', [BagiHasilController::class, 'destroyByMusim'])
+             ->name('bagi-hasil.destroyMusim');
         Route::resource('laporan', LaporanController::class);
         Route::patch('laporan/{laporan}/finalisasi', [LaporanController::class, 'finalisasi'])
              ->name('laporan.finalisasi');
@@ -125,5 +139,6 @@ Route::middleware('pengguna.auth')->group(function () {
     */
     Route::middleware('pengguna.auth:ketua')->group(function () {
         Route::resource('pengguna', PenggunaController::class);
+        Route::resource('anggota', AnggotaPetaniController::class);
     });
 });

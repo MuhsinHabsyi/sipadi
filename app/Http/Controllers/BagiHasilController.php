@@ -30,8 +30,10 @@ class BagiHasilController extends Controller
     {
         $musim_tanam = $request->query('musim_tanam');
         
-        // Ambil daftar musim tanam unik dari data panen
-        $listMusim = DataPanen::select('musim_tanam')->distinct()->pluck('musim_tanam');
+        // Ambil daftar musim tanam unik dari data bibit dan panen
+        $musimBibit = \App\Models\AlokasiBibit::select('musim_tanam')->distinct()->pluck('musim_tanam');
+        $musimPanen = DataPanen::select('musim_tanam')->distinct()->pluck('musim_tanam');
+        $listMusim = $musimBibit->concat($musimPanen)->unique()->sort()->values();
 
         $previewData = null;
         $totalKeuntungan = 0;
@@ -47,8 +49,16 @@ class BagiHasilController extends Controller
                 // 1. Cek Kelengkapan Data Kas (Simulasi sederhana: jika ada pemasukan dan pengeluaran terkait musim ini)
                 // Dalam skenario nyata, mungkin ada flag khusus di ArusKas. Kita asumsikan hitung semua kas saat ini.
                 // Atau bisa dari tanggal awal musim tanam sampai akhir. Di sini kita hitung seluruh saldo positif.
-                $pemasukan = ArusKas::where('musim_tanam', $musim_tanam)->where('jenis_transaksi', 'pemasukan')->sum('nominal');
-                $pengeluaran = ArusKas::where('musim_tanam', $musim_tanam)->where('jenis_transaksi', 'pengeluaran')->sum('nominal');
+                // 1. Hitung pemasukan dari Transaksi Selesai
+                $pemasukan = \App\Models\Transaksi::where('musim_tanam', $musim_tanam)
+                    ->where('status_pesanan', \App\Models\Transaksi::STATUS_SELESAI)
+                    ->sum('total_harga');
+
+                // 2. Hitung pengeluaran dari Pengadaan Beli
+                $pengeluaran = \App\Models\Pengadaan::where('musim_tanam', $musim_tanam)
+                    ->where('asal_barang', 'Beli')
+                    ->sum('total_biaya');
+
                 $totalKeuntungan = $pemasukan - $pengeluaran;
 
                 if ($totalKeuntungan <= 0) {
@@ -62,15 +72,21 @@ class BagiHasilController extends Controller
                     } else {
                         $totalPanenSemua = $dataPanenMusim->sum('total_panen');
                         
+                        // Group data panen berdasarkan petani (antisipasi jika 1 petani punya banyak lahan/record)
+                        $groupedPanen = $dataPanenMusim->groupBy('id_petani');
+                        
                         $previewData = [];
-                        foreach ($dataPanenMusim as $panen) {
-                            $proporsi = ($panen->total_panen / $totalPanenSemua) * 100;
+                        foreach ($groupedPanen as $idPetani => $records) {
+                            $namaPetani = $records->first()->petani->nama_petani ?? "Petani Tidak Teridentifikasi ($idPetani)";
+                            $totalPanenPetani = $records->sum('total_panen');
+                            
+                            $proporsi = ($totalPanenPetani / $totalPanenSemua) * 100;
                             $alokasi = ($proporsi / 100) * $totalKeuntungan;
                             
                             $previewData[] = [
-                                'id_petani' => $panen->id_petani,
-                                'nama_petani' => $panen->petani->nama_petani,
-                                'total_panen' => $panen->total_panen,
+                                'id_petani' => $idPetani,
+                                'nama_petani' => $namaPetani,
+                                'total_panen' => $totalPanenPetani,
                                 'proporsi_panen' => round($proporsi, 2),
                                 'alokasi_keuntungan' => round($alokasi, 2),
                             ];
@@ -97,8 +113,14 @@ class BagiHasilController extends Controller
         }
 
         // Recalculate on server to ensure data integrity
-        $pemasukan = ArusKas::where('musim_tanam', $musim_tanam)->where('jenis_transaksi', 'pemasukan')->sum('nominal');
-        $pengeluaran = ArusKas::where('musim_tanam', $musim_tanam)->where('jenis_transaksi', 'pengeluaran')->sum('nominal');
+        $pemasukan = \App\Models\Transaksi::where('musim_tanam', $musim_tanam)
+            ->where('status_pesanan', \App\Models\Transaksi::STATUS_SELESAI)
+            ->sum('total_harga');
+
+        $pengeluaran = \App\Models\Pengadaan::where('musim_tanam', $musim_tanam)
+            ->where('asal_barang', 'Beli')
+            ->sum('total_biaya');
+
         $totalKeuntungan = $pemasukan - $pengeluaran;
 
         if ($totalKeuntungan <= 0) {
@@ -111,6 +133,7 @@ class BagiHasilController extends Controller
         }
 
         $totalPanenSemua = $dataPanenMusim->sum('total_panen');
+        $groupedPanen = $dataPanenMusim->groupBy('id_petani');
 
         try {
             DB::beginTransaction();
@@ -118,12 +141,13 @@ class BagiHasilController extends Controller
             $inserts = [];
             $now = now()->toDateTimeString();
             
-            foreach ($dataPanenMusim as $panen) {
-                $proporsi = ($panen->total_panen / $totalPanenSemua) * 100;
+            foreach ($groupedPanen as $idPetani => $records) {
+                $totalPanenPetani = $records->sum('total_panen');
+                $proporsi = ($totalPanenPetani / $totalPanenSemua) * 100;
                 $alokasi = ($proporsi / 100) * $totalKeuntungan;
 
                 $inserts[] = [
-                    'id_petani' => $panen->id_petani,
+                    'id_petani' => $idPetani,
                     'musim_tanam' => $musim_tanam,
                     'proporsi_panen' => round($proporsi, 2),
                     'alokasi_keuntungan' => round($alokasi, 2),
@@ -142,5 +166,38 @@ class BagiHasilController extends Controller
             DB::rollBack();
             return back()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
         }
+    }
+
+    public function edit(PembagianHasil $bagiHasil)
+    {
+        $bagiHasil->load('petani');
+        return view('bagi_hasil.edit', compact('bagiHasil'));
+    }
+
+    public function update(Request $request, PembagianHasil $bagiHasil)
+    {
+        $request->validate([
+            'alokasi_keuntungan' => 'required|numeric|min:0',
+        ]);
+
+        $bagiHasil->update([
+            'alokasi_keuntungan' => $request->alokasi_keuntungan,
+        ]);
+
+        return redirect()->route('bagi-hasil.index')->with('success', 'Data pembagian hasil diperbarui.');
+    }
+
+    public function destroy(PembagianHasil $bagiHasil)
+    {
+        $bagiHasil->delete();
+        return redirect()->route('bagi-hasil.index')->with('success', 'Catatan pembagian hasil dihapus.');
+    }
+
+    /** Hapus seluruh pembagian hasil pada satu musim tertentu */
+    public function destroyByMusim(Request $request)
+    {
+        $musim = $request->musim_tanam;
+        PembagianHasil::where('musim_tanam', $musim)->delete();
+        return redirect()->route('bagi-hasil.index')->with('success', "Seluruh data pembagian hasil musim $musim telah dihapus.");
     }
 }

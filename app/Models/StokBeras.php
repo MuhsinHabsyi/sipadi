@@ -11,6 +11,10 @@ class StokBeras extends Model
 
     protected $fillable = [
         'ketersediaan_stok',
+        'stok_ecommerce',
+        'stok_distributor',
+        'stok_gudang',
+        'harga_per_kilo',
     ];
 
     public function transaksis(): HasMany

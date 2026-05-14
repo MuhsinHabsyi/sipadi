@@ -14,10 +14,10 @@
                 🌾 Langsung dari Petani
             </div>
             <h1 style="font-size: 48px; font-weight: 900; line-height: 1.15; margin-bottom: 20px; letter-spacing: -1px;">
-                Beras Berkualitas<br>dari Sawah Kami<br>ke Meja Anda
+                {!! nl2br(e($konten->judul_hero ?? 'Beras Berkualitas dari Sawah Kami ke Meja Anda')) !!}
             </h1>
             <p style="font-size: 17px; opacity: .85; margin-bottom: 36px; line-height: 1.7; max-width: 460px;">
-                Kelompok Tani SIPADI menghadirkan beras pilihan yang ditanam dengan penuh dedikasi. Segar, alami, dan berkualitas tinggi.
+                {{ $konten->deskripsi_hero ?? 'Kelompok Tani SIPADI menghadirkan beras pilihan yang ditanam dengan penuh dedikasi. Segar, alami, dan berkualitas tinggi.' }}
             </p>
             <div style="display: flex; gap: 14px;">
                 <a href="#produk" class="btn-primary" style="padding: 14px 28px; font-size: 15px; background: #fff; color: var(--primary);">
@@ -61,22 +61,32 @@
 {{-- ========== PRODUK ========== --}}
 <section id="produk" class="section" style="background: var(--bg);">
     <div class="container">
-        <h2 class="section-title">Produk Kami</h2>
-        <p class="section-subtitle">Pilih beras berkualitas tinggi sesuai kebutuhan Anda. Semua langsung dari sawah petani kami.</p>
+        <h2 class="section-title">{{ $konten->judul_toko ?? 'Produk Kami' }}</h2>
+        <p class="section-subtitle">{{ $konten->deskripsi_toko ?? 'Pilih beras berkualitas tinggi sesuai kebutuhan Anda.' }}</p>
 
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px;">
+        @if(count($products) > 0)
+        <div style="display: flex; justify-content: center;">
             @foreach($products as $product)
-            <div style="background: #fff; border-radius: var(--rl); overflow: hidden; border: 1px solid var(--border); transition: all .3s;"
+            <div style="background: #fff; border-radius: var(--rl); overflow: hidden; border: 1px solid var(--border); transition: all .3s; max-width: 400px; width: 100%;"
                  onmouseenter="this.style.transform='translateY(-6px)';this.style.boxShadow='var(--shadow-lg)'"
                  onmouseleave="this.style.transform='none';this.style.boxShadow='none'">
 
                 {{-- Product visual --}}
-                <div style="height: 180px; background: linear-gradient(135deg, #E8F5EE, #D4EDE0); display: flex; align-items: center; justify-content: center;">
-                    <span style="font-size: 80px;">{{ $product['emoji'] }}</span>
+                <div style="height: 220px; background: linear-gradient(135deg, #E8F5EE, #D4EDE0); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                    @if($product['gambar'])
+                        <img src="{{ $product['gambar'] }}" alt="{{ $product['nama'] }}" style="width: 100%; height: 100%; object-fit: cover;">
+                    @else
+                        <span style="font-size: 80px;">🌾</span>
+                    @endif
                 </div>
 
                 <div style="padding: 24px;">
-                    <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 6px;">{{ $product['nama'] }}</h3>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                        <h3 style="font-size: 18px; font-weight: 700; margin: 0;">{{ $product['nama'] }}</h3>
+                        <span style="font-size: 11px; font-weight: 700; background: {{ $product['stok_tersedia'] > 0 ? '#E8F5EE' : '#FEF2F2' }}; color: {{ $product['stok_tersedia'] > 0 ? 'var(--primary)' : '#991B1B' }}; padding: 3px 8px; border-radius: 12px; border: 1px solid {{ $product['stok_tersedia'] > 0 ? '#B7E4C7' : '#FCA5A5' }};">
+                            Stok: {{ $product['stok_tersedia'] }} kg
+                        </span>
+                    </div>
                     <p style="font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.6;">{{ $product['deskripsi'] }}</p>
 
                     <div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 20px;">
@@ -89,18 +99,25 @@
                         <input type="hidden" name="slug" value="{{ $product['slug'] }}">
                         <div style="display: flex; align-items: center; border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden;">
                             <button type="button" onclick="changeQty(this, -1)" style="width: 36px; height: 38px; border: none; background: var(--bg); cursor: pointer; font-size: 16px; font-weight: 700; color: var(--muted);">−</button>
-                            <input type="number" name="jumlah" value="1" min="1" max="100"
+                            <input type="number" name="jumlah" value="1" min="1" max="{{ $product['stok_tersedia'] ?? 100 }}"
                                    style="width: 50px; text-align: center; border: none; font-size: 14px; font-weight: 600; font-family: inherit; outline: none;">
                             <button type="button" onclick="changeQty(this, 1)" style="width: 36px; height: 38px; border: none; background: var(--bg); cursor: pointer; font-size: 16px; font-weight: 700; color: var(--muted);">+</button>
                         </div>
-                        <button type="submit" class="btn-primary" style="flex: 1; justify-content: center; padding: 10px;">
-                            <i class="ph-bold ph-shopping-cart"></i> Keranjang
+                        <button type="submit" class="btn-primary" style="flex: 1; justify-content: center; padding: 10px;" {{ ($product['stok_tersedia'] ?? 0) <= 0 ? 'disabled' : '' }}>
+                            <i class="ph-bold ph-shopping-cart"></i> {{ ($product['stok_tersedia'] ?? 0) <= 0 ? 'Habis' : 'Keranjang' }}
                         </button>
                     </form>
                 </div>
             </div>
             @endforeach
         </div>
+        @else
+        <div style="text-align: center; padding: 60px 20px; color: var(--muted);">
+            <i class="ph-bold ph-package" style="font-size: 48px; display: block; margin-bottom: 16px; opacity: .4;"></i>
+            <p style="font-size: 16px; font-weight: 600;">Produk belum tersedia saat ini.</p>
+            <p style="font-size: 13px;">Silakan kembali lagi nanti.</p>
+        </div>
+        @endif
     </div>
 </section>
 
